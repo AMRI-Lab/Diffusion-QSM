@@ -4,4 +4,4 @@ Diffusion-QSM: diffusion model with time-travel and resampling refinement for qu
 ## Setup   
 
 ## Usage
-1.  Download the trained weights from [[Google Driver]]()
+1.  Download the trained weights from [[Google Driver]](https://drive.google.com/file/d/1ZVSjQl4IWftmdP4TQ8Br-SlU812rBOoZ/view?usp=drive_link)
