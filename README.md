@@ -8,12 +8,10 @@ Our codes are built upon [guided-diffusion](https://github.com/openai/guided-dif
 * Python 3.8
 
 ## Introduction to files
-|files/Folder                          |usage|
-|----------------|-------------------------------|-----------------------------|
-|`data_prep`           |test data preparation, run `demo.m` to generate `data_DiffusionQSM.mat` under `data_prep/data` folder
-|`guided_diffusion`    |files for DDPM and QSM-related codes, important files include `gaussian_diffusion.py` and `data_consistent.py`
-|`weights`             |trained weight `model700000.pt` from [Google Drive](https://drive.google.com/file/d/1BZqL7dPCUcRbaik2ygvURg39CGwFsnbE/view?usp=drive_link)|
-|`recon.py`            |inference code, recommend to adjust only in variable `args_params` |
+1.  `data_prep`            test data preparation, run `demo.m` to generate `data_DiffusionQSM.mat` under `data_prep/data` folder 
+2.  `guided_diffusion`     files for DDPM and QSM-related codes, important files include `gaussian_diffusion.py` and `data_consistent.py` 
+3.  `weights`              trained weight `model700000.pt` from [Google Drive](https://drive.google.com/file/d/1BZqL7dPCUcRbaik2ygvURg39CGwFsnbE/view?usp=drive_link) 
+4.  `recon.py`            inference code, recommend to adjust only in variable `args_params`  
 
 ## Usage
 **Data preparation**
