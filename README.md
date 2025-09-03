@@ -2,6 +2,7 @@
 This repo contains Matlab codes for generating input data and python codes for running Diffusion-QSM.  
 
 Diffusion-QSM: diffusion model with time-travel and resampling refinement for quantitative susceptibility mapping
+https://ieeexplore.ieee.org/document/11147123
 
 ## Setup   
 Our codes are built upon [guided-diffusion](https://github.com/openai/guided-diffusion), you may install the environment based on [guided-diffusion](https://github.com/openai/guided-diffusion).
