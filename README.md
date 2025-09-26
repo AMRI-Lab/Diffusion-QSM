@@ -27,6 +27,11 @@ trained weight `model700000.pt` from [Google Drive](https://drive.google.com/fil
 
 inference code, recommend to adjust only in variable `args_params`  
 
+5.  `QSM_Diffusion_train.py`
+
+training code, you can train your own network using this script
+
+
 ## Usage
 **Data preparation**
 1.  Generate test data `data_DiffusionQSM.mat` containing `phi_use`, `mask`, `D2` and `pad_size` based on the `demo.m` files in `data_prep` folder. You can download one test data via [Google Drive](https://drive.google.com/file/d/1B0pkNPCZTDhohy7rW6lL72vbq_Rc1vUH/view?usp=sharing). 
