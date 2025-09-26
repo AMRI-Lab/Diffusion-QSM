@@ -6,6 +6,61 @@ import blobfile as bf
 from mpi4py import MPI
 import numpy as np
 from torch.utils.data import DataLoader, Dataset
+import torch
+from scipy.io import loadmat
+
+
+def load_chisep_data(data_dir,
+                     name_list,
+                     batch_size,
+                     deterministic,
+                     isnormFlag
+                
+):
+    dataset=ChisepData(data_dir,
+                       name_list,
+                       isnormFlag
+                       )
+    if deterministic:
+        loader = DataLoader(
+            dataset, batch_size=batch_size, shuffle=False, num_workers=1, drop_last=True
+        )
+    else:
+        loader = DataLoader(
+            dataset, batch_size=batch_size, shuffle=True, num_workers=1, drop_last=True
+        )
+    while True:
+        yield from loader
+
+
+class ChisepData(Dataset):
+    def __init__(self, data_name,name_list,data_name2, name_list2, data_name3, name_list3,isnorm):
+        self.qsm_data=[]
+        for sub in name_list:
+            d1=loadmat(data_name+'//'+str(sub)+'.mat')
+            qsm=d1['qsm']
+            self.qsm_data.append(qsm) 
+        self.qsm_data=np.array(self.qsm_data)
+        self.qsm_data = torch.from_numpy(self.qsm_data).float()
+        self.qsm_data = torch.unsqueeze(self.qsm_data, 1)
+        print(self.qsm_data.shape)
+        self.isnorm = isnorm
+                                    
+    def __len__(self):
+        return self.qsm_data.shape[0]
+    
+    def normalize(self,img,amin,amax):
+        a=torch.amin(img)
+        b=torch.amax(img)
+        img_new = amin + (img-a)/(b-a) * (amax-amin)
+        return img_new
+    
+    def __getitem__(self, index):
+        if not self.isnorm:
+            return self.qsm_data[index], {}
+        else:
+            return self.normalize(self.qsm_data[index],-1,1), {}
+
 
 
 def load_data(

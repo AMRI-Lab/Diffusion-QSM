@@ -12,11 +12,19 @@ from . import dist_util, logger
 from .fp16_util import MixedPrecisionTrainer
 from .nn import update_ema
 from .resample import LossAwareSampler, UniformSampler
+from torch.utils.tensorboard import SummaryWriter
 
 # For ImageNet experiments, this was a good default value.
 # We found that the lg_loss_scale quickly climbed to
 # 20-21 within the first ~1K steps of training.
 INITIAL_LOG_LOSS_SCALE = 20.0
+os.environ['MASTER_ADDR'] = 'localhost'
+os.environ['MASTER_PORT'] = '29069'
+os.environ['RANK'] = '0'
+#os.environ["CUDA_VISIBLE_DEVICES"] = "0,1"
+os.environ['WORLD_SIZE'] = '1'
+
+dist.init_process_group(backend='nccl', init_method='env://', rank = 0, world_size = 1)
 
 
 class TrainLoop:
@@ -38,6 +46,7 @@ class TrainLoop:
         schedule_sampler=None,
         weight_decay=0.0,
         lr_anneal_steps=0,
+        save_dir
     ):
         self.model = model
         self.diffusion = diffusion
@@ -58,6 +67,7 @@ class TrainLoop:
         self.schedule_sampler = schedule_sampler or UniformSampler(diffusion)
         self.weight_decay = weight_decay
         self.lr_anneal_steps = lr_anneal_steps
+        self.save_dir = save_dir
 
         self.step = 0
         self.resume_step = 0
@@ -150,13 +160,14 @@ class TrainLoop:
             )
             self.opt.load_state_dict(state_dict)
 
-    def run_loop(self):
+    def run_loop(self,args1):
+        writer = SummaryWriter(args1['folder'])
         while (
             not self.lr_anneal_steps
             or self.step + self.resume_step < self.lr_anneal_steps
         ):
             batch, cond = next(self.data)
-            self.run_step(batch, cond)
+            self.run_step(batch, cond, writer, self.step)
             if self.step % self.log_interval == 0:
                 logger.dumpkvs()
             if self.step % self.save_interval == 0:
@@ -169,15 +180,15 @@ class TrainLoop:
         if (self.step - 1) % self.save_interval != 0:
             self.save()
 
-    def run_step(self, batch, cond):
-        self.forward_backward(batch, cond)
+    def run_step(self, batch, cond, writer, step):
+        self.forward_backward(batch, cond, writer, step)
         took_step = self.mp_trainer.optimize(self.opt)
         if took_step:
             self._update_ema()
         self._anneal_lr()
         self.log_step()
 
-    def forward_backward(self, batch, cond):
+    def forward_backward(self, batch, cond, writer, step):
         self.mp_trainer.zero_grad()
         for i in range(0, batch.shape[0], self.microbatch):
             micro = batch[i : i + self.microbatch].to(dist_util.dev())
@@ -208,6 +219,7 @@ class TrainLoop:
                 )
 
             loss = (losses["loss"] * weights).mean()
+            writer.add_scalar('train_loss', loss.item(),step)
             log_loss_dict(
                 self.diffusion, t, {k: v * weights for k, v in losses.items()}
             )
@@ -238,7 +250,7 @@ class TrainLoop:
                     filename = f"model{(self.step+self.resume_step):06d}.pt"
                 else:
                     filename = f"ema_{rate}_{(self.step+self.resume_step):06d}.pt"
-                with bf.BlobFile(bf.join(get_blob_logdir(), filename), "wb") as f:
+                with bf.BlobFile(bf.join(self.save_dir, filename), "wb") as f:
                     th.save(state_dict, f)
 
         save_checkpoint(0, self.mp_trainer.master_params)
@@ -247,11 +259,11 @@ class TrainLoop:
 
         if dist.get_rank() == 0:
             with bf.BlobFile(
-                bf.join(get_blob_logdir(), f"opt{(self.step+self.resume_step):06d}.pt"),
+                bf.join(self.save_dir, f"opt{(self.step+self.resume_step):06d}.pt"),
                 "wb",
             ) as f:
                 th.save(self.opt.state_dict(), f)
-
+        print(get_blob_logdir())
         dist.barrier()
 
 
